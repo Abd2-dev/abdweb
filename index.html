@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>abdweb — Canvas</title>
+<style>
+  :root { color-scheme: light dark; }
+  body {
+    margin: 0;
+    font-family: system-ui, -apple-system, sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    padding: 24px;
+    background: #0f1115;
+    color: #e6e6e6;
+  }
+  h1 { margin: 0; font-size: 20px; font-weight: 600; }
+  .toolbar {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .toolbar button,
+  .toolbar input[type="range"],
+  .toolbar input[type="color"] {
+    background: #1b1f27;
+    color: #e6e6e6;
+    border: 1px solid #2a2f3a;
+    border-radius: 6px;
+    padding: 6px 10px;
+    font: inherit;
+    cursor: pointer;
+  }
+  .toolbar button:hover { background: #242a34; }
+  canvas {
+    background: #ffffff;
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+    touch-action: none;
+    max-width: 100%;
+    height: auto;
+  }
+</style>
+</head>
+<body>
+  <h1>abdweb canvas</h1>
+  <div class="toolbar">
+    <label>Color <input type="color" id="color" value="#1a1a1a" /></label>
+    <label>Size <input type="range" id="size" min="1" max="40" value="4" /></label>
+    <button id="clear" type="button">Clear</button>
+    <button id="save" type="button">Save PNG</button>
+  </div>
+  <canvas id="board" width="800" height="500" aria-label="Drawing canvas"></canvas>
+
+  <script>
+    const canvas = document.getElementById('board');
+    const ctx = canvas.getContext('2d');
+    const colorInput = document.getElementById('color');
+    const sizeInput = document.getElementById('size');
+    const clearBtn = document.getElementById('clear');
+    const saveBtn = document.getElementById('save');
+
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    let drawing = false;
+    let last = null;
+
+    const pointerPos = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      return {
+        x: (e.clientX - rect.left) * (canvas.width / rect.width),
+        y: (e.clientY - rect.top) * (canvas.height / rect.height),
+      };
+    };
+
+    canvas.addEventListener('pointerdown', (e) => {
+      drawing = true;
+      last = pointerPos(e);
+      canvas.setPointerCapture(e.pointerId);
+    });
+
+    canvas.addEventListener('pointermove', (e) => {
+      if (!drawing) return;
+      const p = pointerPos(e);
+      ctx.strokeStyle = colorInput.value;
+      ctx.lineWidth = Number(sizeInput.value);
+      ctx.beginPath();
+      ctx.moveTo(last.x, last.y);
+      ctx.lineTo(p.x, p.y);
+      ctx.stroke();
+      last = p;
+    });
+
+    const stop = (e) => {
+      drawing = false;
+      last = null;
+      if (e && e.pointerId !== undefined && canvas.hasPointerCapture(e.pointerId)) {
+        canvas.releasePointerCapture(e.pointerId);
+      }
+    };
+    canvas.addEventListener('pointerup', stop);
+    canvas.addEventListener('pointercancel', stop);
+    canvas.addEventListener('pointerleave', stop);
+
+    clearBtn.addEventListener('click', () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+    });
+
+    saveBtn.addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'abdweb-canvas.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+  </script>
+</body>
+</html>
